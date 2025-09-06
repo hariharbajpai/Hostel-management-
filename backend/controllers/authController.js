@@ -1,10 +1,9 @@
-import User from '../../models/User.js';
+import User from '../models/User.js';
 import { ADMIN_EMAILS } from '../auth/adminList.js';
 import { verifyIdToken } from '../auth/googleVerify.js';
 import { signAccessToken, signRefreshToken, verifyRefresh } from '../auth/jwt.js';
 import bcrypt from 'bcryptjs';
 import { isValidEmail, isStrongPassword } from '../utils/validation.js';
-import rateLimit from 'express-rate-limit';
 
 const cookieOpts = (maxAgeMs) => ({
   httpOnly: true,
@@ -228,9 +227,3 @@ export const logout = async (_req, res) => {
 export const me = async (req, res) => {
   return res.json({ user: req.user });
 };
-
-export const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts
-  message: { error: 'Too many login attempts, please try again later' }
-});

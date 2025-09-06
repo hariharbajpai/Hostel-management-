@@ -4,9 +4,9 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 dotenv.config();
 
-import connectDB from './backend/db/index.js';
-import authRoutes from './backend/routes/authRoutes.js';
-import { notFound, errorHandler } from './backend/middleware/index.js';
+import connectDB from './db/index.js';
+import authRoutes from './routes/authRoutes.js';
+import { notFound, errorHandler } from './middleware/index.js';
 
 const app = express();
 app.use(express.json());
