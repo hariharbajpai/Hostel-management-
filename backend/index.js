@@ -11,7 +11,10 @@ import { notFound, errorHandler } from './middleware/index.js';
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: [/localhost:\d+$/, /127\.0\.0\.1:\d+$/], credentials: true }));
+app.use(cors({ 
+  origin: [/localhost:\d+$/, /127\.0\.0\.1:\d+$/], 
+  credentials: true 
+}));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);

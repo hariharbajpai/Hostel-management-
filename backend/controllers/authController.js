@@ -29,165 +29,172 @@ const decideRole = (email) => {
   return null; // not allowed
 };
 
-// ---------- Google Login ----------
-export const googleLogin = async (req, res) => {
-  const { idToken } = req.body;
-  if (!idToken) return res.status(400).json({ error: 'idToken required' });
-
-  const g = await verifyIdToken(idToken);
-  if (!g.emailVerified) return res.status(401).json({ error: 'Email not verified' });
-
-  const role = decideRole(g.email);
-  if (!role) return res.status(403).json({ error: 'Only allowlisted admins or @vitbhopal.ac.in students' });
-
-  let user = await User.findOne({ email: g.email.toLowerCase() });
-  if (!user) {
-    user = await User.create({
-      googleId: g.googleId,
-      email: g.email.toLowerCase(),
-      name: g.name,
-      avatar: g.picture,
-      role
-    });
-  } else if (user.role !== role) {
-    user.role = role;
-    await user.save();
+// ---------- Student Google Login (Only Google OAuth) ----------
+export const studentGoogleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ error: 'idToken required' });
+    }
+    
+    const g = await verifyIdToken(idToken);
+    if (!g.emailVerified) {
+      return res.status(401).json({ error: 'Email not verified' });
+    }
+    
+    // Strict check: Only @vitbhopal.ac.in emails allowed for students
+    const domain = g.email.toLowerCase().split('@')[1];
+    if (domain !== (process.env.ALLOWED_STUDENT_DOMAIN || 'vitbhopal.ac.in')) {
+      return res.status(403).json({ error: 'Only @vitbhopal.ac.in students are allowed' });
+    }
+    
+    let user = await User.findOne({ email: g.email.toLowerCase() });
+    if (!user) {
+      user = await User.create({
+        googleId: g.googleId,
+        email: g.email.toLowerCase(),
+        name: g.name,
+        avatar: g.picture,
+        role: 'student'
+      });
+    } else {
+      // Ensure role is always student for @vitbhopal.ac.in
+      user.role = 'student';
+      await user.save();
+    }
+    
+    const payload = { id: user._id.toString(), role: user.role, email: user.email, name: user.name };
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken({ id: payload.id });
+    
+    return res
+      .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
+      .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
+      .json({ user: payload, accessToken, refreshToken });
+      
+  } catch (error) {
+    console.error('Student Google login error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  const payload = { id: user._id.toString(), role: user.role, email: user.email, name: user.name };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken({ id: payload.id });
-
-  return res
-    .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
-    .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
-    .json({ user: payload, accessToken, refreshToken });
 };
 
-// ---------- Email/Password Register (students + allowlisted admins) ----------
-export const register = async (req, res) => {
-  const { email, password, name } = req.body;
-  
-  // Block admin registration through normal route
-  if (ADMIN_EMAILS.includes(email.toLowerCase())) {
-    return res.status(403).json({ 
-      error: 'Administrators cannot register through this route' 
+// ---------- REMOVED: Student Registration via Email/Password ----------
+// Students can ONLY login via Google OAuth with @vitbhopal.ac.in email
+
+// ---------- Admin Registration ----------
+export const adminSignup = async (req, res) => {
+  try {
+    const { name, phone, email, password } = req.body;
+    
+    // Validate required fields
+    if (!name || !phone || !email || !password) {
+      return res.status(400).json({ error: 'Name, phone, email, and password are required' });
+    }
+    
+    // Validate email format
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    
+    // Validate password strength
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character' });
+    }
+    
+    // Check if email is in authorized admin list
+    if (!ADMIN_EMAILS.includes(email.toLowerCase())) {
+      return res.status(403).json({ error: 'Email not authorized for admin registration' });
+    }
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(409).json({ error: 'Admin with this email already exists' });
+    }
+    
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    
+    // Create admin user
+    const user = await User.create({
+      email: email.toLowerCase(),
+      name,
+      phone,
+      role: 'admin',
+      passwordHash
     });
+    
+    // Generate tokens
+    const payload = { id: user._id.toString(), role: user.role, email: user.email, name: user.name };
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken({ id: payload.id });
+    
+    return res
+      .status(201)
+      .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
+      .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
+      .json({ user: payload, accessToken, refreshToken });
+      
+  } catch (error) {
+    console.error('Admin signup error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  
-  // Enhanced validation
-  if (!email || !password || !name) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-  
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ error: 'Invalid email format' });
-  }
-  
-  if (!isStrongPassword(password)) {
-    return res.status(400).json({ 
-      error: 'Password must be at least 8 characters with numbers and special characters'
-    });
-  }
-
-  const role = decideRole(email);
-  if (!role) return res.status(403).json({ error: 'Only allowlisted admins or @vitbhopal.ac.in students' });
-
-  const lower = email.toLowerCase();
-  const exists = await User.findOne({ email: lower });
-  if (exists) return res.status(409).json({ error: ERROR_MESSAGES.EMAIL_IN_USE });
-
-  const salt = await bcrypt.genSalt(10);
-  const passwordHash = await bcrypt.hash(password, salt);
-  const user = await User.create({ email: lower, name, passwordHash, role });
-
-  const payload = { id: user._id.toString(), role: user.role, email: user.email, name: user.name };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken({ id: payload.id });
-
-  return res
-    .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
-    .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
-    .status(201)
-    .json({ user: payload, accessToken, refreshToken });
 };
 
-// ---------- Email/Password Login ----------
-export const login = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'email & password required' });
+// ---------- REMOVED: Email/Password Login ----------
+// Students can ONLY login via Google OAuth
 
-  const user = await User.findOne({ email: email.toLowerCase() });
-  if (!user || !user.passwordHash) return res.status(401).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
-
-  const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) return res.status(401).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
-
-  // enforce role policy every login
-  const role = decideRole(user.email);
-  if (!role) return res.status(403).json({ error: 'Policy restriction' });
-  if (user.role !== role) { user.role = role; await user.save(); }
-
-  const payload = { id: user._id.toString(), role: user.role, email: user.email, name: user.name };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken({ id: payload.id });
-
-  return res
-    .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
-    .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
-    .json({ user: payload, accessToken, refreshToken });
-};
-
-// Admin Login
+// ---------- Admin Login ----------
 export const adminLogin = async (req, res) => {
-  const { email, password } = req.body;
-  
-  // Check if email is in admin list
-  if (!ADMIN_EMAILS.includes(email.toLowerCase())) {
-    return res.status(403).json({ error: 'Not authorized as admin' });
+  try {
+    const { email, password } = req.body;
+    
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    
+    // Check if email is in admin list
+    if (!ADMIN_EMAILS.includes(email.toLowerCase())) {
+      return res.status(403).json({ error: 'Not authorized as admin' });
+    }
+    
+    // Find user and verify password
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user || !user.passwordHash) {
+      return res.status(401).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
+    }
+    
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) {
+      return res.status(401).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
+    }
+    
+    // Ensure user role is admin (in case of role changes)
+    if (user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+    
+    const payload = { id: user._id.toString(), role: user.role, email: user.email, name: user.name };
+    const accessToken = signAccessToken(payload);
+    const refreshToken = signRefreshToken({ id: payload.id });
+    
+    return res
+      .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
+      .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
+      .json({ user: payload, accessToken, refreshToken });
+      
+  } catch (error) {
+    console.error('Admin login error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
-
-  const user = await User.findOne({ email: email.toLowerCase() });
-  if (!user || !user.passwordHash) return res.status(401).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
-
-  const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) return res.status(401).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
-
-  const payload = { id: user._id.toString(), role: user.role, email: user.email, name: user.name };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken({ id: payload.id });
-
-  return res
-    .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
-    .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
-    .json({ user: payload, accessToken, refreshToken });
 };
 
-// Student Login
-export const studentLogin = async (req, res) => {
-  const { email, password } = req.body;
-  
-  // Check if email is from allowed student domain
-  const domain = email.toLowerCase().split('@')[1];
-  if (domain !== (process.env.ALLOWED_STUDENT_DOMAIN || 'vitbhopal.ac.in')) {
-    return res.status(403).json({ error: 'Not a valid student email' });
-  }
-
-  const user = await User.findOne({ email: email.toLowerCase() });
-  if (!user || !user.passwordHash) return res.status(401).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
-
-  const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) return res.status(401).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
-
-  const payload = { id: user._id.toString(), role: user.role, email: user.email, name: user.name };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken({ id: payload.id });
-
-  return res
-    .cookie('accessToken', accessToken, cookieOpts(15 * 60 * 1000))
-    .cookie('refreshToken', refreshToken, cookieOpts(7 * 24 * 60 * 60 * 1000))
-    .json({ user: payload, accessToken, refreshToken });
-};
+// ---------- REMOVED: Student Email/Password Login ----------
+// Students can ONLY login via Google OAuth with @vitbhopal.ac.in email
+// Use /api/auth/student/google endpoint instead
 
 // ---------- Refresh ----------
 export const refresh = async (req, res) => {
@@ -223,7 +230,4 @@ export const logout = async (_req, res) => {
   return res.json({ ok: true });
 };
 
-// ---------- Me ----------
-export const me = async (req, res) => {
-  return res.json({ user: req.user });
-};
+

@@ -1,36 +1,31 @@
 // backend/routes/authRoutes.js
 import { Router } from 'express';
 import {
-  googleLogin,
+  studentGoogleLogin,
+  adminSignup,
   adminLogin,
-  studentLogin,
-  register,
   refresh,
-  logout,
-  me
+  logout
 } from '../controllers/authController.js';
 
 // single middleware hub (auth, role, limiter, 404/error live here)
 import { requireAuth, loginLimiter } from '../middleware/index.js';
-import { isAdmin, isStudent } from '../middleware/roleCheck.js';
 
 const r = Router();
 
 /**
- * Public: Google OAuth
- * - Role auto-decides via allowlist (@admin) / vitbhopal domain (@student)
+ * Student auth - ONLY Google OAuth allowed
+ * - Students MUST use @vitbhopal.ac.in email
+ * - No email/password registration or login
  */
-r.post('/google', googleLogin);
-
-/**
- * Student auth
- */
-r.post('/student/register', loginLimiter, register);
-r.post('/student/login',    loginLimiter, studentLogin);
+r.post('/student/google', studentGoogleLogin);
 
 /**
  * Admin auth
+ * - Admin signup with authorized emails only
+ * - Admin login with email/password
  */
+r.post('/admin/signup', loginLimiter, adminSignup);
 r.post('/admin/login', loginLimiter, adminLogin);
 
 /**
@@ -41,20 +36,6 @@ r.post('/admin/login', loginLimiter, adminLogin);
 r.post('/refresh', refresh);
 r.post('/logout', requireAuth, logout);
 
-/**
- * Profile
- */
-r.get('/me', requireAuth, me);
 
-/**
- * Role-scoped demo routes (for quick verification)
- */
-r.get('/admin/dashboard',   requireAuth, isAdmin,   (_req, res) => {
-  res.json({ ok: true, message: 'Admin dashboard' });
-});
-
-r.get('/student/dashboard', requireAuth, isStudent, (_req, res) => {
-  res.json({ ok: true, message: 'Student dashboard' });
-});
 
 export default r;
