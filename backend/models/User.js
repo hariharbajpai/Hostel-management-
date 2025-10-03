@@ -7,10 +7,9 @@ const userSchema = new mongoose.Schema(
     name: { type: String },
     role: { type: String, enum: ['admin', 'student'], required: true },
     avatar: { type: String },
-    phone: { type: String }, // Phone number for admin users
+    phone: { type: String } // Phone number for admin users
 
-    // Optional email/password flow support
-    passwordHash: { type: String }
+    // Google OAuth only - no password authentication
   },
   { timestamps: true }
 );

@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+.env.test.local
 
 # Dependencies
 node_modules/
@@ -30,3 +31,8 @@ Thumbs.db
 .DS_Store
 *.sublime-project
 *.sublime-workspace
+\n# Local test runner (not committed)
+test/index.html
+
+# API Documentation (generated/local)
+API_Documentation.md

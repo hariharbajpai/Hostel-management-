@@ -1,9 +1,7 @@
 // backend/routes/authRoutes.js
 import { Router } from 'express';
 import {
-  studentGoogleLogin,
-  adminSignup,
-  adminLogin,
+  googleLogin,
   refresh,
   logout
 } from '../controllers/authController.js';
@@ -14,19 +12,12 @@ import { requireAuth, loginLimiter } from '../middleware/index.js';
 const r = Router();
 
 /**
- * Student auth - ONLY Google OAuth allowed
- * - Students MUST use @vitbhopal.ac.in email
- * - No email/password registration or login
+ * Google OAuth authentication - ONLY authentication method
+ * - Both students and admins use Google OAuth with @vitbhopal.ac.in email
+ * - Role is automatically determined based on email and admin list
+ * - No email/password registration or login for anyone
  */
-r.post('/student/google', studentGoogleLogin);
-
-/**
- * Admin auth
- * - Admin signup with authorized emails only
- * - Admin login with email/password
- */
-r.post('/admin/signup', loginLimiter, adminSignup);
-r.post('/admin/login', loginLimiter, adminLogin);
+r.post('/google', googleLogin);
 
 /**
  * Session utils

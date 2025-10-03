@@ -6,6 +6,7 @@ dotenv.config();
 
 import connectDB from './db/index.js';
 import authRoutes from './routes/authRoutes.js';
+import hostelRoutes from './routes/hostelRoutes.js';
 import { notFound, errorHandler } from './middleware/index.js';
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(cors({
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);
+app.use('/api/hostel', hostelRoutes);
 
 // 404 + error
 app.use(notFound);
