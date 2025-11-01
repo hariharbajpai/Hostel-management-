@@ -1,35 +1,21 @@
-import { Link, Outlet } from "react-router-dom";
+import { motion } from 'framer-motion';
+import Navbar from './Navbar';
 
-export default function Layout() {
-	return (
-		<div className="flex min-h-screen">
-			{/* Side Menu */}
-			<aside className="w-64 bg-gray-800 text-white p-6">
-				<h1 className="text-2xl font-bold mb-6">Hostel Management</h1>
-				<nav className="space-y-3">
-					<Link to="/" className="block hover:bg-gray-700 p-2 rounded">
-						Dashboard
-					</Link>
-					<Link to="/complaint" className="block hover:bg-gray-700 p-2 rounded">
-						Complaints
-					</Link>
-					<Link
-						to="/notifications"
-						className="block hover:bg-gray-700 p-2 rounded">
-						Notifications
-					</Link>
-					<Link
-						to="/room-change"
-						className="block hover:bg-gray-700 p-2 rounded">
-						Room Change
-					</Link>
-				</nav>
-			</aside>
+const Layout = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <motion.main
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      >
+        {children}
+      </motion.main>
+    </div>
+  );
+};
 
-			{/* Main Content */}
-			<main className="flex-1 p-8 bg-gray-100">
-				<Outlet />
-			</main>
-		</div>
-	);
-}
+export default Layout;

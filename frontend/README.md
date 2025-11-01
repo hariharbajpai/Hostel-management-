@@ -1,11 +1,39 @@
-# React + Vite
+# VitStay Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Modern, animated hostel management system frontend for VIT Bhopal built with React, Vite, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Black & White Theme**: Clean, professional design
+- **3D Animations**: Smooth animations powered by Framer Motion
+- **Google OAuth**: Secure authentication for @vitbhopal.ac.in emails only
+- **Role-Based Access**: Separate interfaces for students and admins
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Real-time Notifications**: Toast notifications
+
+## 📦 Installation
+
+```bash
+npm install
+cp .env.example .env
+# Update .env with your Google Client ID
+npm run dev
+```
+
+## 🏃 Commands
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## 🎨 Tech Stack
+
+- React 19 + Vite
+- Tailwind CSS + Framer Motion
+- React Router + Zustand
+- Axios + React Hot Toast
+- Google OAuth
 
 ## React Compiler
 
