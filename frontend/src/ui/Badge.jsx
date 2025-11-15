@@ -16,3 +16,4 @@ const Badge = ({ children, variant = 'default', className = '' }) => {
 };
 
 export default Badge;
+import React from 'react';
