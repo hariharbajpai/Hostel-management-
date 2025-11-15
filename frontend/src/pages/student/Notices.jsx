@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, Heart, MessageSquare, Pin, Calendar, Filter, Search, Eye } from 'lucide-react';
 import Layout from '../../components/Layout';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, MessageSquare, ThumbsUp, Clock, CheckCircle, AlertCircle, Filter, Search } from 'lucide-react';
 import Layout from '../../components/Layout';
