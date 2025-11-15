@@ -21,9 +21,11 @@ const Login = () => {
       
       // Navigate based on role
       if (data.user.role === 'admin') {
+        // navigate('/admin/dashboard');
+      } 
+      else {
+        // navigate('/student/dashboard');
         navigate('/admin/dashboard');
-      } else {
-        navigate('/student/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);
