@@ -7,6 +7,7 @@ import Card from '../../ui/Card';
 import Button from '../../ui/Button';
 import Loader from '../../ui/Loader';
 import hostelService from '../../services/hostelService';
+import adminService from '../../services/adminService';
 import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
@@ -25,16 +26,18 @@ const AdminDashboard = () => {
   const loadStats = async () => {
     try {
       setLoading(true);
-      const [applications, swaps, rooms] = await Promise.all([
+      const [applications, swaps, rooms, adminStats] = await Promise.all([
         hostelService.listApplications(),
         hostelService.listSwapRequests(),
         hostelService.getRoomsAvailability(),
+        adminService.getStats()
       ]);
 
       setStats({
         applications: applications.applications?.length || 0,
         swaps: swaps.swaps?.length || 0,
         rooms: rooms.rooms?.length || 0,
+        students: adminStats.totalStudents || 0
       });
     } catch (error) {
       console.error('Failed to load stats:', error);
@@ -69,6 +72,7 @@ const AdminDashboard = () => {
     { icon: FileText, label: 'Applications', value: stats.applications, color: 'bg-blue-500' },
     { icon: RefreshCw, label: 'Swap Requests', value: stats.swaps, color: 'bg-green-500' },
     { icon: Building, label: 'Total Rooms', value: stats.rooms, color: 'bg-purple-500' },
+    { icon: Users, label: 'Total Students', value: stats.students, color: 'bg-orange-500' },
   ];
 
   return (
@@ -149,6 +153,18 @@ const AdminDashboard = () => {
                   <div>
                     <h3 className="font-bold text-lg mb-1">Batch Auto-Assign</h3>
                     <p className="text-sm text-gray-400">Assign rooms to all pending students</p>
+                  </div>
+                  <Users className="w-6 h-6" />
+                </div>
+              </Card>
+            </motion.div>
+
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Card hoverable className="cursor-pointer" onClick={() => navigate('/admin/students')}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-lg mb-1">Manage Students</h3>
+                    <p className="text-sm text-gray-600">Add students manually or via CSV</p>
                   </div>
                   <Users className="w-6 h-6" />
                 </div>

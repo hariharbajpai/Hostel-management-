@@ -18,6 +18,7 @@ import AdminSwaps from './pages/admin/Swaps';
 import AdminRooms from './pages/admin/Rooms';
 import AdminComplaints from './pages/admin/Complaints';
 import AdminNotices from './pages/admin/Notices';
+import AdminStudents from './pages/admin/AdminStudents';
 
 const App = () => {
   const { user } = useAuthStore();
@@ -146,6 +147,14 @@ const App = () => {
             element={
               <ProtectedRoute requireRole="admin">
                 <AdminNotices />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/students"
+            element={
+              <ProtectedRoute requireRole="admin">
+                <AdminStudents />
               </ProtectedRoute>
             }
           />

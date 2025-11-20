@@ -18,7 +18,7 @@ const Login = () => {
       const data = await authService.googleLogin(credentialResponse.credential);
       setSession(data);
       toast.success(`Welcome, ${data.user.name}!`);
-      
+
       // Navigate based on role
       if (data.user.role === 'admin') {
         navigate('/admin/dashboard');
@@ -27,7 +27,11 @@ const Login = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(error.response?.data?.error || 'Login failed. Please try again.');
+      if (error.response?.status === 403) {
+        toast.error(error.response.data.error || 'Access denied. Please contact admin.');
+      } else {
+        toast.error(error.response?.data?.error || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,7 +50,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-12 items-center">
-        
+
         {/* Left Side - Branding */}
         <motion.div
           initial={{ opacity: 0, x: -50 }}
@@ -54,7 +58,7 @@ const Login = () => {
           transition={{ duration: 0.6 }}
           className="hidden lg:block"
         >
-          <motion.h1 
+          <motion.h1
             className="text-7xl font-black mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -62,8 +66,8 @@ const Login = () => {
           >
             Vit<span className="text-gray-400">Stay</span>
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             className="text-xl text-gray-600 mb-12"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -121,7 +125,7 @@ const Login = () => {
               >
                 <Building2 className="w-10 h-10" />
               </motion.div>
-              
+
               <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
               <p className="text-gray-600">Sign in with your VIT Bhopal account</p>
             </div>

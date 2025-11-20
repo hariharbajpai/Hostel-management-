@@ -23,7 +23,7 @@ const StudentNotices = () => {
   });
 
   const categories = [
-    'general', 'academic', 'hostel', 'mess', 'events', 'maintenance', 'emergency'
+    'general', 'maintenance', 'events', 'rules', 'emergency', 'food', 'facilities', 'academic', 'fees', 'other'
   ];
 
   const priorities = ['low', 'medium', 'high', 'urgent'];
@@ -69,12 +69,15 @@ const StudentNotices = () => {
   const getCategoryBadge = (category) => {
     const variants = {
       general: 'default',
-      academic: 'info',
-      hostel: 'warning',
-      mess: 'success',
-      events: 'info',
       maintenance: 'warning',
-      emergency: 'danger'
+      events: 'info',
+      rules: 'info',
+      emergency: 'danger',
+      food: 'success',
+      facilities: 'warning',
+      academic: 'info',
+      fees: 'default',
+      other: 'default'
     };
     return <Badge variant={variants[category] || 'default'}>{category.toUpperCase()}</Badge>;
   };
@@ -90,7 +93,7 @@ const StudentNotices = () => {
   };
 
   const isExpired = (notice) => {
-    return notice.expiryDate && new Date(notice.expiryDate) < new Date();
+    return notice.expiresAt && new Date(notice.expiresAt) < new Date();
   };
 
   if (loading) {
@@ -189,10 +192,10 @@ const StudentNotices = () => {
                         <p className="text-gray-600 mb-3 line-clamp-2">{notice.content}</p>
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <span>{formatDate(notice.publishedAt || notice.createdAt)}</span>
-                          {notice.expiryDate && (
+                          {notice.expiresAt && (
                             <>
                               <span>•</span>
-                              <span>Expires: {formatDate(notice.expiryDate)}</span>
+                              <span>Expires: {formatDate(notice.expiresAt)}</span>
                             </>
                           )}
                         </div>
@@ -253,10 +256,10 @@ const StudentNotices = () => {
                       <p className="text-gray-600 mb-3 line-clamp-2">{notice.content}</p>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span>{formatDate(notice.publishedAt || notice.createdAt)}</span>
-                        {notice.expiryDate && (
+                        {notice.expiresAt && (
                           <>
                             <span>•</span>
-                            <span>Expires: {formatDate(notice.expiryDate)}</span>
+                            <span>Expires: {formatDate(notice.expiresAt)}</span>
                           </>
                         )}
                       </div>

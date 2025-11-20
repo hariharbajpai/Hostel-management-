@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 
@@ -7,6 +8,7 @@ const Select = ({
   options = [], 
   className = '', 
   containerClassName = '',
+  children,
   ...props 
 }) => {
   return (
@@ -25,11 +27,13 @@ const Select = ({
         className={`input-field ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''} ${className}`}
         {...props}
       >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
+        {options && options.length > 0
+          ? options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))
+          : children}
       </select>
       {error && (
         <motion.span 

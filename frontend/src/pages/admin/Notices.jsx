@@ -36,14 +36,14 @@ const AdminNotices = () => {
       hostelNumbers: [],
       roomNumbers: []
     },
-    expiryDate: '',
+    expiresAt: '',
     isPinned: false,
     isUrgent: false,
     tags: []
   });
 
   const categories = [
-    'general', 'academic', 'hostel', 'mess', 'events', 'maintenance', 'emergency'
+    'general', 'maintenance', 'events', 'rules', 'emergency', 'food', 'facilities', 'academic', 'fees', 'other'
   ];
 
   const priorities = ['low', 'medium', 'high', 'urgent'];
@@ -56,7 +56,12 @@ const AdminNotices = () => {
   const loadNotices = async () => {
     try {
       setLoading(true);
-      const data = await noticeService.getAllNotices(filters);
+      const apiFilters = { ...filters };
+      if (apiFilters.status) {
+        apiFilters.isPublished = apiFilters.status === 'published' ? true : apiFilters.status === 'draft' ? false : undefined;
+        delete apiFilters.status;
+      }
+      const data = await noticeService.getAllNotices(apiFilters);
       setNotices(data.notices || []);
     } catch (error) {
       console.error('Failed to load notices:', error);
@@ -148,7 +153,7 @@ const AdminNotices = () => {
       category: notice.category,
       priority: notice.priority,
       targetAudience: notice.targetAudience || { type: 'all', hostelNumbers: [], roomNumbers: [] },
-      expiryDate: notice.expiryDate ? new Date(notice.expiryDate).toISOString().split('T')[0] : '',
+      expiresAt: notice.expiresAt ? new Date(notice.expiresAt).toISOString().split('T')[0] : '',
       isPinned: notice.isPinned,
       isUrgent: notice.isUrgent,
       tags: notice.tags || []
@@ -167,7 +172,7 @@ const AdminNotices = () => {
         hostelNumbers: [],
         roomNumbers: []
       },
-      expiryDate: '',
+      expiresAt: '',
       isPinned: false,
       isUrgent: false,
       tags: []
@@ -187,12 +192,15 @@ const AdminNotices = () => {
   const getCategoryBadge = (category) => {
     const variants = {
       general: 'default',
-      academic: 'info',
-      hostel: 'warning',
-      mess: 'success',
-      events: 'info',
       maintenance: 'warning',
-      emergency: 'danger'
+      events: 'info',
+      rules: 'info',
+      emergency: 'danger',
+      food: 'success',
+      facilities: 'warning',
+      academic: 'info',
+      fees: 'default',
+      other: 'default'
     };
     return <Badge variant={variants[category] || 'default'}>{category.toUpperCase()}</Badge>;
   };
@@ -392,10 +400,10 @@ const AdminNotices = () => {
                       <p className="text-gray-600 mb-3 line-clamp-2">{notice.content}</p>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span>{new Date(notice.createdAt).toLocaleDateString()}</span>
-                        {notice.expiryDate && (
+                        {notice.expiresAt && (
                           <>
                             <span>•</span>
-                            <span>Expires: {new Date(notice.expiryDate).toLocaleDateString()}</span>
+                            <span>Expires: {new Date(notice.expiresAt).toLocaleDateString()}</span>
                           </>
                         )}
                         <span>•</span>
@@ -513,8 +521,8 @@ const AdminNotices = () => {
               <Input
                 label="Expiry Date (Optional)"
                 type="date"
-                value={noticeData.expiryDate}
-                onChange={(e) => setNoticeData({ ...noticeData, expiryDate: e.target.value })}
+                value={noticeData.expiresAt}
+                onChange={(e) => setNoticeData({ ...noticeData, expiresAt: e.target.value })}
               />
             </div>
 

@@ -4,15 +4,21 @@ import { Save, CheckCircle } from 'lucide-react';
 import Layout from '../../components/Layout';
 import Card from '../../ui/Card';
 import Button from '../../ui/Button';
-import Input from '../../ui/Input';
 import Select from '../../ui/Select';
 import Loader from '../../ui/Loader';
 import hostelService from '../../services/hostelService';
 import toast from 'react-hot-toast';
 
+const TRAITS_LIST = [
+  "Early Riser", "Night Owl", "Studious", "Gamer",
+  "Sports Enthusiast", "Music Lover", "Artist", "Social Butterfly",
+  "Introvert", "Clean Freak", "Foodie", "Techie"
+];
+
 const StudentPreferences = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [availableHostels, setAvailableHostels] = useState([]);
   const [formData, setFormData] = useState({
     foodPreference: 'vegetarian',
     preferredSeater: 2,
@@ -23,16 +29,24 @@ const StudentPreferences = () => {
       largeDining: false,
       extraFacilities: false,
     },
+    traits: []
   });
 
   useEffect(() => {
-    loadProfile();
+    loadData();
   }, []);
 
-  const loadProfile = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const { profile } = await hostelService.getProfile();
+      const [profileData, hostelsData] = await Promise.all([
+        hostelService.getProfile(),
+        hostelService.getHostelNames()
+      ]);
+
+      setAvailableHostels(hostelsData.hostels || []);
+
+      const profile = profileData.profile;
       if (profile) {
         setFormData({
           foodPreference: profile.foodPreference || 'vegetarian',
@@ -41,10 +55,11 @@ const StudentPreferences = () => {
           preferredHostels: profile.preferredHostels || [],
           preferredBlock: profile.preferredBlock || '',
           amenities: profile.amenities || { largeDining: false, extraFacilities: false },
+          traits: profile.traits || []
         });
       }
     } catch (error) {
-      console.error('Failed to load profile:', error);
+      console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
@@ -72,6 +87,38 @@ const StudentPreferences = () => {
         ? prev.preferredHostels.filter((h) => h !== hostel)
         : [...prev.preferredHostels, hostel],
     }));
+  };
+
+  const handleTraitToggle = (trait) => {
+    setFormData((prev) => ({
+      ...prev,
+      traits: prev.traits.includes(trait)
+        ? prev.traits.filter((t) => t !== trait)
+        : [...prev.traits, trait],
+    }));
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete your preferences? This action cannot be undone.')) return;
+    setSubmitting(true);
+    try {
+      await hostelService.deletePreferences();
+      toast.success('Preferences deleted successfully');
+      setFormData({
+        foodPreference: 'vegetarian',
+        preferredSeater: 2,
+        preferredAC: false,
+        preferredHostels: [],
+        preferredBlock: '',
+        amenities: { largeDining: false, extraFacilities: false },
+        traits: []
+      });
+    } catch (error) {
+      console.error('Failed to delete preferences:', error);
+      toast.error(error.response?.data?.error || 'Failed to delete preferences');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -150,53 +197,47 @@ const StudentPreferences = () => {
               <h2 className="text-2xl font-bold mb-6">Hostel Preferences</h2>
               <p className="text-sm text-gray-600 mb-4">Select your preferred hostels (optional)</p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                  <motion.button
-                    key={num}
+              {availableHostels.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {availableHostels.map((h) => (
+                    <motion.button
+                      key={h}
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleHostelToggle(h)}
+                      className={`p-4 rounded-lg border-2 font-semibold transition-all ${formData.preferredHostels.includes(h)
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white border-gray-300 hover:border-gray-400'
+                        }`}
+                    >
+                      {typeof h === 'number' ? `Hostel ${h}` : h}
+                    </motion.button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">No hostels available yet.</p>
+              )}
+            </Card>
+
+            <Card>
+              <h2 className="text-2xl font-bold mb-6">Traits & Hobbies</h2>
+              <p className="text-sm text-gray-600 mb-4">Select traits to help us find compatible roommates</p>
+
+              <div className="flex flex-wrap gap-2">
+                {TRAITS_LIST.map((trait) => (
+                  <button
+                    key={trait}
                     type="button"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleHostelToggle(num)}
-                    className={`p-4 rounded-lg border-2 font-semibold transition-all ${
-                      formData.preferredHostels.includes(num)
-                        ? 'bg-black text-white border-black'
-                        : 'bg-white border-gray-300 hover:border-gray-400'
-                    }`}
+                    onClick={() => handleTraitToggle(trait)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${formData.traits.includes(trait)
+                        ? 'bg-black text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
                   >
-                    Hostel {num}
-                  </motion.button>
+                    {trait}
+                  </button>
                 ))}
-              </div>
-
-              <div className="mt-4 space-y-3">
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleHostelToggle('aminity')}
-                  className={`w-full p-4 rounded-lg border-2 font-semibold transition-all ${
-                    formData.preferredHostels.includes('aminity')
-                      ? 'bg-black text-white border-black'
-                      : 'bg-white border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  Aminity Hostel
-                </motion.button>
-
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleHostelToggle('largedinning-2')}
-                  className={`w-full p-4 rounded-lg border-2 font-semibold transition-all ${
-                    formData.preferredHostels.includes('largedinning-2')
-                      ? 'bg-black text-white border-black'
-                      : 'bg-white border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  Large Dinning-2 Hostel
-                </motion.button>
               </div>
             </Card>
 
@@ -243,6 +284,9 @@ const StudentPreferences = () => {
             </Card>
 
             <div className="flex gap-4">
+              <Button type="button" onClick={handleDelete} disabled={submitting} variant="outline" className="flex-1 border-red-500 text-red-500 hover:bg-red-50">
+                Delete Preferences
+              </Button>
               <Button type="submit" loading={submitting} className="flex-1">
                 <Save className="w-5 h-5" />
                 Save Preferences

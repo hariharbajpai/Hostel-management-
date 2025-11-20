@@ -35,7 +35,7 @@ const StudentComplaints = () => {
   });
 
   const categories = [
-    'maintenance', 'cleanliness', 'food', 'security', 'noise', 'facilities', 'other'
+    'maintenance', 'cleanliness', 'food', 'security', 'noise', 'facilities', 'staff_behavior', 'other'
   ];
 
   const priorities = ['low', 'medium', 'high', 'urgent'];
@@ -93,11 +93,11 @@ const StudentComplaints = () => {
   const getStatusBadge = (status) => {
     const variants = {
       open: 'warning',
-      'in-progress': 'info',
+      in_progress: 'info',
       resolved: 'success',
       closed: 'default'
     };
-    return <Badge variant={variants[status] || 'default'}>{status.replace('-', ' ').toUpperCase()}</Badge>;
+    return <Badge variant={variants[status] || 'default'}>{status.replace('_', ' ').toUpperCase()}</Badge>;
   };
 
   const getPriorityBadge = (priority) => {
@@ -114,7 +114,7 @@ const StudentComplaints = () => {
     switch (status) {
       case 'open':
         return <AlertCircle className="w-5 h-5 text-yellow-500" />;
-      case 'in-progress':
+      case 'in_progress':
         return <Clock className="w-5 h-5 text-blue-500" />;
       case 'resolved':
         return <CheckCircle className="w-5 h-5 text-green-500" />;
@@ -167,7 +167,7 @@ const StudentComplaints = () => {
             >
               <option value="">All Status</option>
               <option value="open">Open</option>
-              <option value="in-progress">In Progress</option>
+              <option value="in_progress">In Progress</option>
               <option value="resolved">Resolved</option>
               <option value="closed">Closed</option>
             </Select>

@@ -7,9 +7,19 @@ const hostelService = {
     return data;
   },
 
+  getHostelNames: async () => {
+    const { data } = await api.get('/hostel/rooms/hostel-names');
+    return data;
+  },
+
   // ===== STUDENT ENDPOINTS =====
   setPreferences: async (preferences) => {
     const { data } = await api.post('/hostel/student/preferences', preferences);
+    return data;
+  },
+
+  deletePreferences: async () => {
+    const { data } = await api.delete('/hostel/student/preferences');
     return data;
   },
 
@@ -61,6 +71,11 @@ const hostelService = {
 
   upsertRoom: async (roomData) => {
     const { data } = await api.post('/hostel/admin/rooms/upsert', roomData);
+    return data;
+  },
+
+  bulkAddRooms: async (roomsList) => {
+    const { data } = await api.post('/hostel/admin/rooms/bulk', { rooms: roomsList });
     return data;
   },
 

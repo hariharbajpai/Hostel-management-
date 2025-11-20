@@ -33,11 +33,11 @@ const AdminComplaints = () => {
   });
 
   const categories = [
-    'maintenance', 'cleanliness', 'food', 'security', 'noise', 'facilities', 'other'
+    'maintenance', 'cleanliness', 'food', 'security', 'noise', 'facilities', 'staff_behavior', 'other'
   ];
 
   const priorities = ['low', 'medium', 'high', 'urgent'];
-  const statuses = ['open', 'in-progress', 'resolved', 'closed'];
+  const statuses = ['open', 'in_progress', 'resolved', 'closed'];
 
   useEffect(() => {
     loadComplaints();
@@ -115,11 +115,11 @@ const AdminComplaints = () => {
   const getStatusBadge = (status) => {
     const variants = {
       open: 'warning',
-      'in-progress': 'info',
+      in_progress: 'info',
       resolved: 'success',
       closed: 'default'
     };
-    return <Badge variant={variants[status] || 'default'}>{status.replace('-', ' ').toUpperCase()}</Badge>;
+    return <Badge variant={variants[status] || 'default'}>{status.replace('_', ' ').toUpperCase()}</Badge>;
   };
 
   const getPriorityBadge = (priority) => {
