@@ -9,18 +9,20 @@ import authRoutes from './routes/authRoutes.js';
 import hostelRoutes from './routes/hostelRoutes.js';
 import complaintRoutes from './routes/complaintRoutes.js';
 import noticeRoutes from './routes/noticeRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { notFound, errorHandler } from './middleware/index.js';
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ 
-  origin: [/localhost:\d+$/, /127\.0\.0\.1:\d+$/], 
-  credentials: true 
+app.use(cors({
+  origin: [/localhost:\d+$/, /127\.0\.0\.1:\d+$/],
+  credentials: true
 }));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/hostel', hostelRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/notices', noticeRoutes);

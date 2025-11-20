@@ -6,12 +6,10 @@ export function deriveBlockType(hostelNumber) {
   return premium.includes(Number(hostelNumber)) ? 'premium' : 'normal';
 }
 
-const NAMED_HOSTELS = ['aminity', 'largedinning-2'];
-
 const roomSchema = new mongoose.Schema(
   {
-    hostelNumber: { type: Number, min: 1, max: 8 },
-    hostelName: { type: String, enum: NAMED_HOSTELS },
+    hostelNumber: { type: Number },
+    hostelName: { type: String }, // Dynamic name allowed
     blockType: { type: String, enum: ['normal', 'premium'], required: true },
     seater: { type: Number, enum: [1, 2, 3, 4, 6, 8], required: true },
     ac: { type: Boolean, required: true },

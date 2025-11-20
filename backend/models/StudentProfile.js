@@ -1,7 +1,5 @@
 import mongoose from 'mongoose';
 
-const NAMED_HOSTELS = ['aminity', 'largedinning-2'];
-
 const studentProfileSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true, required: true },
@@ -13,12 +11,14 @@ const studentProfileSchema = new mongoose.Schema(
       validate: {
         validator: function (arr) {
           if (!Array.isArray(arr)) return true;
-          return arr.every(v => (typeof v === 'number' && v >= 1 && v <= 8) || (typeof v === 'string' && NAMED_HOSTELS.includes(v)));
+          // Allow any number or string since admins can add any hostel
+          return arr.every(v => typeof v === 'number' || typeof v === 'string');
         },
-        message: 'preferredHostels must contain numbers 1-8 or named hostels'
+        message: 'preferredHostels must contain numbers or hostel names'
       }
     },
     preferredBlock: { type: String, enum: ['normal', 'premium'] },
+    traits: { type: [String], default: [] }, // Student hobbies/personality
     amenities: {
       largeDining: { type: Boolean, default: false },
       extraFacilities: { type: Boolean, default: false }

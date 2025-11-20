@@ -41,7 +41,7 @@ async function findMatchingRoom({ preferredSeater, preferredAC, preferredHostels
 export async function setPreferences(req, res) {
   try {
     const userId = req.user.id;
-    const { foodPreference, preferredSeater, preferredAC, preferredHostels, amenities } = req.body;
+    const { foodPreference, preferredSeater, preferredAC, preferredHostels, amenities, traits } = req.body;
     const preferredBlock =
       req.body.preferredBlock ||
       (Array.isArray(preferredHostels) && preferredHostels.length && typeof preferredHostels[0] === 'number'
@@ -57,7 +57,8 @@ export async function setPreferences(req, res) {
         preferredAC,
         preferredHostels,
         preferredBlock,
-        amenities
+        amenities,
+        traits // Save traits
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     ).lean();
@@ -89,6 +90,34 @@ export async function autoAssignRoom(req, res) {
     return res.json({ assignedRoom: room });
   } catch (err) {
     console.error('autoAssignRoom error', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// -------- Student: delete preferences --------
+export async function deletePreferences(req, res) {
+  try {
+    const userId = req.user.id;
+    const profile = await StudentProfile.findOne({ user: userId });
+    if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+    if (profile.assignedRoom) {
+      return res.status(400).json({ error: 'Cannot delete preferences after room assignment' });
+    }
+
+    // Reset preferences
+    profile.foodPreference = undefined;
+    profile.preferredSeater = undefined;
+    profile.preferredAC = undefined;
+    profile.preferredHostels = [];
+    profile.preferredBlock = undefined;
+    profile.amenities = { largeDining: false, extraFacilities: false };
+    profile.traits = [];
+
+    await profile.save();
+    return res.json({ message: 'Preferences deleted successfully' });
+  } catch (err) {
+    console.error('deletePreferences error', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -180,14 +209,25 @@ export async function applyChange(req, res) {
 export async function listApplications(_req, res) {
   try {
     const apps = await ChangeApplication.find().sort({ createdAt: -1 }).lean();
-    return res.json({ applications: apps });
+    // Fetch user traits to display to admin
+    const userIds = apps.map(a => a.user);
+    const profiles = await StudentProfile.find({ user: { $in: userIds } }).select('user traits').lean();
+    const traitsMap = {};
+    profiles.forEach(p => { traitsMap[p.user] = p.traits; });
+
+    const appsWithTraits = apps.map(a => ({
+      ...a,
+      traits: traitsMap[a.user] || []
+    }));
+
+    return res.json({ applications: appsWithTraits });
   } catch (err) {
     console.error('listApplications error', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
-// -------- Admin: approve/reject application --------
+// -------- Admin: decide application --------
 export async function decideApplication(req, res) {
   try {
     const { id } = req.params;
@@ -313,6 +353,47 @@ export async function upsertRoom(req, res) {
   }
 }
 
+// -------- Admin: bulk add rooms --------
+export async function bulkAddRooms(req, res) {
+  try {
+    const { rooms } = req.body; // Array of room objects
+    if (!Array.isArray(rooms) || rooms.length === 0) {
+      return res.status(400).json({ error: 'Invalid or empty rooms list' });
+    }
+
+    const results = { added: 0, failed: 0, errors: [] };
+
+    for (const r of rooms) {
+      try {
+        const { hostelNumber, hostelName, seater, ac, amenities, roomLabel, capacity, blockType: inputBlockType } = r;
+        if (hostelNumber == null && !hostelName) throw new Error('Missing hostel identifier');
+
+        const blockType = hostelNumber != null ? deriveBlockType(hostelNumber) : inputBlockType;
+        if (!blockType) throw new Error('blockType required');
+
+        const filter = { seater, ac, roomLabel };
+        if (hostelNumber != null) filter.hostelNumber = hostelNumber;
+        if (hostelName) filter.hostelName = hostelName;
+
+        const update = { seater, ac, amenities, roomLabel, capacity: capacity || seater, blockType };
+        if (hostelNumber != null) update.hostelNumber = hostelNumber;
+        if (hostelName) update.hostelName = hostelName;
+
+        await Room.findOneAndUpdate(filter, update, { upsert: true, new: true, setDefaultsOnInsert: true });
+        results.added++;
+      } catch (err) {
+        results.failed++;
+        results.errors.push({ room: r, error: err.message });
+      }
+    }
+
+    return res.json({ message: 'Bulk room process completed', results });
+  } catch (err) {
+    console.error('bulkAddRooms error', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 // -------- Public: list availability --------
 export async function listAvailability(req, res) {
   try {
@@ -341,6 +422,22 @@ export async function listAvailability(req, res) {
     return res.json({ rooms: formatted });
   } catch (err) {
     console.error('listAvailability error', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// -------- Public: get unique hostel names/numbers --------
+export async function getHostelNames(_req, res) {
+  try {
+    const rooms = await Room.find({}, 'hostelNumber hostelName').lean();
+    const hostels = new Set();
+    rooms.forEach(r => {
+      if (r.hostelName) hostels.add(r.hostelName);
+      if (r.hostelNumber) hostels.add(r.hostelNumber);
+    });
+    return res.json({ hostels: Array.from(hostels).sort() });
+  } catch (err) {
+    console.error('getHostelNames error', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
